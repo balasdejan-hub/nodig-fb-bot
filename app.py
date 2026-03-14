@@ -1,9 +1,8 @@
-import os
 from flask import Flask, request
 
 app = Flask(__name__)
 
-VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "fallback_verify_token")
+VERIFY_TOKEN = "nodig_verify_token_2026"
 
 
 @app.route("/", methods=["GET"])
