@@ -2,7 +2,7 @@ from flask import Flask, request
 
 app = Flask(__name__)
 
-VERIFY_TOKEN = "nodig_verify_token_2026"
+VERIFY_TOKEN = "DEKA_TEST_555"
 
 
 @app.route("/", methods=["GET"])
