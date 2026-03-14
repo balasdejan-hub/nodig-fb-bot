@@ -1,12 +1,15 @@
+import os
 from flask import Flask, request
 
 app = Flask(__name__)
 
-VERIFY_TOKEN = "nodig_verify_token"
+VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "fallback_verify_token")
+
 
 @app.route("/", methods=["GET"])
 def home():
     return "Nodig FB bot running"
+
 
 @app.route("/webhook", methods=["GET"])
 def verify():
@@ -14,7 +17,7 @@ def verify():
     challenge = request.args.get("hub.challenge")
 
     if token == VERIFY_TOKEN:
-        return challenge
+        return challenge or ""
     return "Verification token mismatch", 403
 
 
