@@ -12,12 +12,15 @@ def home():
 
 @app.route("/webhook", methods=["GET"])
 def verify():
+
     token = request.args.get("hub.verify_token")
     challenge = request.args.get("hub.challenge")
 
-    if token == VERIFY_TOKEN:
-        return challenge or ""
-    return "Verification token mismatch", 403
+    return f"""
+received_token = {token}
+expected_token = {VERIFY_TOKEN}
+challenge = {challenge}
+"""
 
 
 @app.route("/webhook", methods=["POST"])
