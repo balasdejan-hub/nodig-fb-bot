@@ -12,21 +12,20 @@ def home():
 
 @app.route("/webhook", methods=["GET"])
 def verify():
-
     token = request.args.get("hub.verify_token")
     challenge = request.args.get("hub.challenge")
 
-    return f"""
-received_token = {token}
-expected_token = {VERIFY_TOKEN}
-challenge = {challenge}
-"""
+    if token == VERIFY_TOKEN:
+        return challenge or ""
+
+    return "Verification token mismatch", 403
 
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.json
     print(data)
+
     return "EVENT_RECEIVED", 200
 
 
