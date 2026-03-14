@@ -21,6 +21,42 @@ def send_message(recipient_id, message_text):
     print("SEND API RESPONSE:", response.status_code, response.text)
 
 
+def get_reply(user_text):
+    text = user_text.lower().strip()
+
+    if any(word in text for word in ["hello", "hi", "hey", "pozdrav", "bok", "zdravo"]):
+        return (
+            "Hello. Thanks for contacting NoDig.\n\n"
+            "You can ask about:\n"
+            "- price\n"
+            "- where to buy\n"
+            "- catalog"
+        )
+
+    if any(word in text for word in ["price", "cijena", "preis", "prix", "precio"]):
+        return (
+            "For pricing and sales information please contact us here:\n"
+            "https://nodig.hr/contact_en.html"
+        )
+
+    if any(word in text for word in ["where", "buy", "dealer", "nabaviti", "kupiti", "distributor"]):
+        return (
+            "You can find sales and distributor information here:\n"
+            "https://nodig.hr/contact_en.html"
+        )
+
+    if any(word in text for word in ["catalog", "brochure", "katalog", "catalogue"]):
+        return (
+            "You can browse our catalog here:\n"
+            "https://nodig.hr/catalog_en.html"
+        )
+
+    return (
+        "Thanks for your message.\n"
+        "Please ask about price, dealer information, catalog or product details."
+    )
+
+
 @app.route("/", methods=["GET"])
 def home():
     return "Nodig FB bot running"
@@ -45,18 +81,14 @@ def webhook():
     if data.get("object") == "page":
         for entry in data.get("entry", []):
             for messaging_event in entry.get("messaging", []):
-
                 sender_id = messaging_event.get("sender", {}).get("id")
 
                 if "message" in messaging_event and sender_id:
                     user_text = messaging_event["message"].get("text", "")
-
                     print("USER MESSAGE:", user_text)
 
-                    send_message(
-                        sender_id,
-                        f"Primio sam poruku: {user_text}"
-                    )
+                    reply_text = get_reply(user_text)
+                    send_message(sender_id, reply_text)
 
     return "EVENT_RECEIVED", 200
 
