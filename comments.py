@@ -384,11 +384,85 @@ def send_daily_report():
 
 
 # ----------------------------
-# SCHEDULER — svaki dan u 08:00
+# TOKEN AUTO-REFRESH
+# ----------------------------
+
+RENDER_API_KEY    = os.getenv("RENDER_API_KEY")
+RENDER_SERVICE_ID = "srv-d6qin1c50q8c73bj62bg"
+FB_APP_ID         = os.getenv("FB_APP_ID")
+FB_APP_SECRET     = os.getenv("FB_APP_SECRET")
+
+
+def refresh_page_token():
+    """
+    Refresha Facebook Page Access Token i ažurira Render env varijablu.
+    Pokreće se svakih 45 dana.
+    """
+    print("[TOKEN REFRESH] Pokrećem refresh tokena...")
+
+    current_token = os.getenv("PAGE_ACCESS_TOKEN")
+    if not current_token:
+        print("[TOKEN REFRESH ERROR] PAGE_ACCESS_TOKEN nije postavljen.")
+        return
+
+    if not all([FB_APP_ID, FB_APP_SECRET, RENDER_API_KEY]):
+        print("[TOKEN REFRESH ERROR] Nedostaju env varijable: FB_APP_ID, FB_APP_SECRET ili RENDER_API_KEY.")
+        return
+
+    # Korak 1 — exchange za novi long-lived token
+    try:
+        resp = requests.get(
+            "https://graph.facebook.com/oauth/access_token",
+            params={
+                "grant_type":        "fb_exchange_token",
+                "client_id":         FB_APP_ID,
+                "client_secret":     FB_APP_SECRET,
+                "fb_exchange_token": current_token,
+            },
+            timeout=20
+        )
+        data = resp.json()
+        new_token = data.get("access_token")
+
+        if not new_token:
+            print(f"[TOKEN REFRESH ERROR] Exchange nije vratio token: {data}")
+            return
+
+        print("[TOKEN REFRESH] Novi token dobiven.")
+
+    except Exception as e:
+        print(f"[TOKEN REFRESH ERROR] Exchange request: {str(e)}")
+        return
+
+    # Korak 2 — ažuriraj Render env varijablu
+    try:
+        render_resp = requests.put(
+            f"https://api.render.com/v1/services/{RENDER_SERVICE_ID}/env-vars",
+            headers={
+                "Authorization": f"Bearer {RENDER_API_KEY}",
+                "Content-Type":  "application/json",
+            },
+            json=[{"key": "PAGE_ACCESS_TOKEN", "value": new_token}],
+            timeout=20
+        )
+
+        if render_resp.status_code == 200:
+            print("[TOKEN REFRESH] Render env varijabla ažurirana. Redeploy u tijeku...")
+        else:
+            print(f"[TOKEN REFRESH ERROR] Render API: {render_resp.status_code} {render_resp.text}")
+
+    except Exception as e:
+        print(f"[TOKEN REFRESH ERROR] Render API request: {str(e)}")
+
+
+# ----------------------------
+# SCHEDULER — svaki dan u 08:00 + token refresh svakih 45 dana
 # ----------------------------
 
 def init_scheduler():
     scheduler = BackgroundScheduler(timezone="Europe/Zagreb")
+
+    # Dnevni email report
     scheduler.add_job(
         send_daily_report,
         trigger="cron",
@@ -396,6 +470,15 @@ def init_scheduler():
         minute=0,
         id="daily_report"
     )
+
+    # Token refresh svakih 45 dana
+    scheduler.add_job(
+        refresh_page_token,
+        trigger="interval",
+        days=45,
+        id="token_refresh"
+    )
+
     scheduler.start()
-    print("[SCHEDULER] Dnevni report scheduler pokrenut (08:00 Europe/Zagreb).")
+    print("[SCHEDULER] Scheduler pokrenut — dnevni report 08:00, token refresh svakih 45 dana.")
     return scheduler
