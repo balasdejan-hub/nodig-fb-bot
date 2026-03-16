@@ -39,13 +39,13 @@ LANG_DOMAIN_MAP = {
 
 CATALOG_URL_MAP = {
     "en": "https://nodig.hr/catalog_en.html",
-    "de": "https://nodig-shop.de",
-    "es": "https://nodig.es",
-    "it": "https://nodig.es",
-    "sl": "https://nodig.si",
-    "fr": "https://nodig.fr",
-    "sr": "https://nodig.rs",
-    "bs": "https://nodig.rs",
+    "de": "https://nodig-shop.de/de/",
+    "es": "https://nodig.es/es/catalogo/",
+    "it": "https://nodig.es/it/catalogo/",
+    "sl": "https://nodig.si/si/katalog/",
+    "fr": "https://nodig.fr/fr/catalogue/",
+    "sr": "https://nodig.rs/sr/katalog/",
+    "bs": "https://nodig.rs/sr/katalog/",
     "hr": "https://nodig.hr/catalog.html",
 }
 
@@ -332,7 +332,7 @@ def handle_message(sender_id, user_text):
             get_localized_text(lang, "price_subtitle"),
             CARD_IMAGE_URL,
             get_localized_text(lang, "price_button"),
-            get_contact_url(lang))
+            get_catalog_url(lang))
     if intent == "where_to_buy":
         return send_generic_card(sender_id,
             get_localized_text(lang, "buy_title"),
