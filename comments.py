@@ -108,6 +108,7 @@ def detect_language(text):
         except Exception as e:
             print(f"[LANGDETECT ERROR] {str(e)}")
 
+    # Sve ostalo (arapski, kineski, hebrejski...) → engleski
     return DEFAULT_LANG
 
 
@@ -147,6 +148,7 @@ def detect_intent(text):
 
 # ----------------------------
 # LOCALIZED COMMENT REPLIES
+# Napomena: price i catalog intenti šalju isti odgovor (link na katalog)
 # ----------------------------
 
 COMMENT_REPLIES = {
@@ -163,29 +165,29 @@ COMMENT_REPLIES = {
     },
     "catalog": {
         "en": "Thanks for your comment! Browse our full catalog here: https://nodig.hr/catalog_en.html 📋",
-        "de": "Danke für Ihren Kommentar! Unseren Katalog finden Sie hier: https://nodig-shop.de 📋",
-        "es": "¡Gracias por su comentario! Vea nuestro catálogo aquí: https://nodig.es 📋",
-        "it": "Grazie per il tuo commento! Puoi vedere il nostro catalogo qui: https://nodig.es 📋",
-        "fr": "Merci pour votre commentaire ! Consultez notre catalogue ici : https://nodig.fr 📋",
-        "sl": "Hvala za komentar! Naš katalog si oglejte tukaj: https://nodig.si 📋",
+        "de": "Danke für Ihren Kommentar! Unseren Katalog finden Sie hier: https://nodig-shop.de/de/ 📋",
+        "es": "¡Gracias por su comentario! Vea nuestro catálogo aquí: https://nodig.es/es/catalogo/ 📋",
+        "it": "Grazie per il tuo commento! Puoi vedere il nostro catalogo qui: https://nodig.es/it/catalogo/ 📋",
+        "fr": "Merci pour votre commentaire ! Consultez notre catalogue ici : https://nodig.fr/fr/catalogue/ 📋",
+        "sl": "Hvala za komentar! Naš katalog si oglejte tukaj: https://nodig.si/si/katalog/ 📋",
         "hr": "Hvala na komentaru! Naš katalog pregledajte ovdje: https://nodig.hr/catalog.html 📋",
-        "sr": "Hvala na komentaru! Naš katalog pogledajte ovde: https://nodig.rs 📋",
-        "bs": "Hvala na komentaru! Naš katalog pogledajte ovdje: https://nodig.rs 📋",
+        "sr": "Hvala na komentaru! Naš katalog pogledajte ovde: https://nodig.rs/sr/katalog/ 📋",
+        "bs": "Hvala na komentaru! Naš katalog pogledajte ovdje: https://nodig.rs/sr/katalog/ 📋",
     },
     "price": {
-        "en": "Thanks for your comment! For pricing information please contact us here: https://nodig.hr/contact_en.html 💬",
-        "de": "Danke für Ihren Kommentar! Für Preisinformationen kontaktieren Sie uns hier: https://nodig-shop.de 💬",
-        "es": "¡Gracias por su comentario! Para información de precios contáctenos aquí: https://nodig.es 💬",
-        "it": "Grazie per il tuo commento! Per informazioni sui prezzi contattateci qui: https://nodig.es 💬",
-        "fr": "Merci pour votre commentaire ! Pour les tarifs contactez-nous ici : https://nodig.fr 💬",
-        "sl": "Hvala za komentar! Za informacije o cenah nas kontaktirajte tukaj: https://nodig.si 💬",
-        "hr": "Hvala na komentaru! Za informacije o cijenama kontaktirajte nas ovdje: https://nodig.hr/contact.html 💬",
-        "sr": "Hvala na komentaru! Za informacije o cenama kontaktirajte nas ovde: https://nodig.rs 💬",
-        "bs": "Hvala na komentaru! Za informacije o cijenama kontaktirajte nas ovdje: https://nodig.rs 💬",
+        "en": "Thanks for your comment! Browse our full catalog here: https://nodig.hr/catalog_en.html 📋",
+        "de": "Danke für Ihren Kommentar! Unseren Katalog finden Sie hier: https://nodig-shop.de/de/ 📋",
+        "es": "¡Gracias por su comentario! Vea nuestro catálogo aquí: https://nodig.es/es/catalogo/ 📋",
+        "it": "Grazie per il tuo commento! Puoi vedere il nostro catalogo qui: https://nodig.es/it/catalogo/ 📋",
+        "fr": "Merci pour votre commentaire ! Consultez notre catalogue ici : https://nodig.fr/fr/catalogue/ 📋",
+        "sl": "Hvala za komentar! Naš katalog si oglejte tukaj: https://nodig.si/si/katalog/ 📋",
+        "hr": "Hvala na komentaru! Naš katalog pregledajte ovdje: https://nodig.hr/catalog.html 📋",
+        "sr": "Hvala na komentaru! Naš katalog pogledajte ovde: https://nodig.rs/sr/katalog/ 📋",
+        "bs": "Hvala na komentaru! Naš katalog pogledajte ovdje: https://nodig.rs/sr/katalog/ 📋",
     },
     "where_to_buy": {
         "en": "Thanks for your comment! Find our dealers and distributors here: https://nodig.hr/index_en.html 📍",
-        "de": "Danke für Ihren Kommentar! Unsere Händler finden Sie hier: https://nodig-shop.de 📍",
+        "de": "Danke für Ihren Kommentar! Unsere Händler finden Sie hier: https://nodig-shop.de/de/ 📍",
         "es": "¡Gracias por su comentario! Encuentre nuestros distribuidores aquí: https://nodig.es 📍",
         "it": "Grazie per il tuo commento! Trova i nostri distributori qui: https://nodig.es 📍",
         "fr": "Merci pour votre commentaire ! Trouvez nos distributeurs ici : https://nodig.fr 📍",
@@ -394,10 +396,6 @@ FB_APP_SECRET     = os.getenv("FB_APP_SECRET")
 
 
 def refresh_page_token():
-    """
-    Refresha Facebook Page Access Token i ažurira Render env varijablu.
-    Pokreće se svakih 45 dana.
-    """
     print("[TOKEN REFRESH] Pokrećem refresh tokena...")
 
     current_token = os.getenv("PAGE_ACCESS_TOKEN")
@@ -409,7 +407,6 @@ def refresh_page_token():
         print("[TOKEN REFRESH ERROR] Nedostaju env varijable: FB_APP_ID, FB_APP_SECRET ili RENDER_API_KEY.")
         return
 
-    # Korak 1 — exchange za novi long-lived token
     try:
         resp = requests.get(
             "https://graph.facebook.com/oauth/access_token",
@@ -434,7 +431,6 @@ def refresh_page_token():
         print(f"[TOKEN REFRESH ERROR] Exchange request: {str(e)}")
         return
 
-    # Korak 2 — ažuriraj Render env varijablu
     try:
         render_resp = requests.put(
             f"https://api.render.com/v1/services/{RENDER_SERVICE_ID}/env-vars",
@@ -462,7 +458,6 @@ def refresh_page_token():
 def init_scheduler():
     scheduler = BackgroundScheduler(timezone="Europe/Zagreb")
 
-    # Dnevni email report
     scheduler.add_job(
         send_daily_report,
         trigger="cron",
@@ -471,7 +466,6 @@ def init_scheduler():
         id="daily_report"
     )
 
-    # Token refresh svakih 45 dana
     scheduler.add_job(
         refresh_page_token,
         trigger="interval",
