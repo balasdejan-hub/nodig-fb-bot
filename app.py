@@ -328,10 +328,10 @@ def handle_message(sender_id, user_text):
             get_catalog_url(lang))
     if intent == "price":
         return send_generic_card(sender_id,
-            get_localized_text(lang, "price_title"),
-            get_localized_text(lang, "price_subtitle"),
+            get_localized_text(lang, "catalog_title"),
+            get_localized_text(lang, "catalog_subtitle"),
             CARD_IMAGE_URL,
-            get_localized_text(lang, "price_button"),
+            get_localized_text(lang, "catalog_button"),
             get_catalog_url(lang))
     if intent == "where_to_buy":
         return send_generic_card(sender_id,
