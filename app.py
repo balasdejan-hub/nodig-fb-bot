@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import requests
 from flask import Flask, request
 from langdetect import detect, DetectorFactory
@@ -16,6 +17,39 @@ GRAPH_API_URL = "https://graph.facebook.com/v19.0/me/messages"
 
 SEEN_MIDS = set()
 MAX_SEEN_MIDS = 500
+
+# ----------------------------
+# HUMAN HANDOFF
+# Pamtimo koji sender_id je preuzet od strane čovjeka.
+# Kada ti odgovoriš iz Page Inboxa, Facebook šalje is_echo poruku.
+# Bot tada prestaje odgovarati toj osobi na HANDOFF_TIMEOUT sekundi.
+# ----------------------------
+
+HANDOFF_TIMEOUT = 4 * 60 * 60  # 4 sata (u sekundama)
+human_taken = {}  # { sender_id: timestamp_preuzimanja }
+
+
+def mark_human_taken(sender_id):
+    human_taken[sender_id] = time.time()
+    print(f"[HANDOFF] Čovjek preuzeo konverzaciju sa {sender_id}")
+
+
+def is_human_active(sender_id):
+    ts = human_taken.get(sender_id)
+    if ts is None:
+        return False
+    if time.time() - ts > HANDOFF_TIMEOUT:
+        del human_taken[sender_id]
+        print(f"[HANDOFF] Timeout istekao za {sender_id} — bot reaktiviran")
+        return False
+    return True
+
+
+def release_human(sender_id):
+    if sender_id in human_taken:
+        del human_taken[sender_id]
+        print(f"[HANDOFF] Ručno oslobođen {sender_id}")
+
 
 # Pokreni scheduler za dnevni report
 init_scheduler()
@@ -401,13 +435,20 @@ def webhook():
             print("[WEBHOOK] EVENT:")
             print(json.dumps(messaging_event, ensure_ascii=False, indent=2))
 
-            sender_id = messaging_event.get("sender", {}).get("id")
+            sender_id    = messaging_event.get("sender", {}).get("id")
+            recipient_id = messaging_event.get("recipient", {}).get("id")
+
             if not sender_id:
                 continue
 
             if "message" in messaging_event:
                 message_obj = messaging_event["message"]
+
+                # --- Echo = čovjek je odgovorio iz Page Inboxa ---
+                # sender je stranica, recipient je korisnik
                 if message_obj.get("is_echo"):
+                    if recipient_id:
+                        mark_human_taken(recipient_id)
                     continue
 
                 mid = message_obj.get("mid")
@@ -419,6 +460,11 @@ def webhook():
                     if len(SEEN_MIDS) > MAX_SEEN_MIDS:
                         SEEN_MIDS.discard(next(iter(SEEN_MIDS)))
 
+                # --- Provjeri je li čovjek aktivan za ovog sendera ---
+                if is_human_active(sender_id):
+                    print(f"[HANDOFF] Bot preskače — čovjek aktivan za {sender_id}")
+                    continue
+
                 text        = (message_obj.get("text") or "").strip()
                 attachments = message_obj.get("attachments", [])
 
@@ -429,7 +475,8 @@ def webhook():
                 continue
 
             if "postback" in messaging_event:
-                handle_postback(sender_id, messaging_event["postback"].get("payload", ""))
+                if not is_human_active(sender_id):
+                    handle_postback(sender_id, messaging_event["postback"].get("payload", ""))
                 continue
 
             for key in ("pass_thread_control", "take_thread_control",
@@ -442,6 +489,31 @@ def webhook():
             print("[WEBHOOK] STANDBY EVENT")
 
     return "EVENT_RECEIVED", 200
+
+
+# ----------------------------
+# HANDOFF MANAGEMENT ENDPOINT
+# Ručno oslobodi korisnika ako treba prije 4h
+# GET /handoff/release/<sender_id>
+# ----------------------------
+
+@app.route("/handoff/release/<sender_id>", methods=["GET"])
+def handoff_release(sender_id):
+    release_human(sender_id)
+    return f"Released {sender_id}", 200
+
+
+@app.route("/handoff/status", methods=["GET"])
+def handoff_status():
+    now = time.time()
+    status = {
+        sid: {
+            "taken_at": int(ts),
+            "expires_in_minutes": int((HANDOFF_TIMEOUT - (now - ts)) / 60)
+        }
+        for sid, ts in human_taken.items()
+    }
+    return json.dumps(status, indent=2), 200, {"Content-Type": "application/json"}
 
 
 if __name__ == "__main__":
